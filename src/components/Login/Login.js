@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useReducer } from 'react';
+import React, { useState, useEffect, useReducer, useContext } from 'react';
 
 import Card from '../UI/Card/Card';
 import classes from './Login.module.css';
 import Button from '../UI/Button/Button';
+import AuthContext from '../../store/auth-context';
 
 const emailReducer = (state, action) => {
   if (action.type === 'USER_INPUT') {
@@ -14,7 +15,7 @@ const emailReducer = (state, action) => {
   return { value: '', isValid: false };
 };
 
-const passwordreducer = (state, action) => {
+const passwordReducer = (state, action) => {
   if (action.type === 'USER_INPUT') {
     return { value: action.val, isValid: action.val.trim().length > 6 };
   }
@@ -23,6 +24,7 @@ const passwordreducer = (state, action) => {
   }
   return { value: '', isValid: false };
 };
+
 const Login = (props) => {
   // const [enteredEmail, setEnteredEmail] = useState('');
   // const [emailIsValid, setEmailIsValid] = useState();
@@ -34,41 +36,48 @@ const Login = (props) => {
     value: '',
     isValid: null,
   });
-
-  const [passworstate, dispatchpasswrd] = useReducer(passwordreducer, {
+  const [passwordState, dispatchPassword] = useReducer(passwordReducer, {
     value: '',
     isValid: null,
   });
 
+  const authCtx = useContext(AuthContext);
 
+  useEffect(() => {
+    console.log('EFFECT RUNNING');
 
-  const {isValid:emailisvalid}=emailState
-  const {isValid:passwordisvalid}=passworstate
+    return () => {
+      console.log('EFFECT CLEANUP');
+    };
+  }, []);
 
+  const { isValid: emailIsValid } = emailState;
+  const { isValid: passwordIsValid } = passwordState;
 
   useEffect(() => {
     const identifier = setTimeout(() => {
       console.log('Checking form validity!');
-      setFormIsValid(
-        emailisvalid && passwordisvalid
-      );
+      setFormIsValid(emailIsValid && passwordIsValid);
     }, 500);
 
     return () => {
       console.log('CLEANUP');
       clearTimeout(identifier);
     };
-  }, [emailisvalid, passwordisvalid]);
+  }, [emailIsValid, passwordIsValid]);
 
   const emailChangeHandler = (event) => {
     dispatchEmail({ type: 'USER_INPUT', val: event.target.value });
 
+    // setFormIsValid(
+    //   event.target.value.includes('@') && passwordState.isValid
+    // );
   };
 
   const passwordChangeHandler = (event) => {
-    dispatchpasswrd({ type: 'USER_INPUT', val: event.target.value });
+    dispatchPassword({ type: 'USER_INPUT', val: event.target.value });
 
-  
+    // setFormIsValid(emailState.isValid && event.target.value.trim().length > 6);
   };
 
   const validateEmailHandler = () => {
@@ -76,20 +85,21 @@ const Login = (props) => {
   };
 
   const validatePasswordHandler = () => {
-    dispatchpasswrd({ type: 'INPUT_BLUR' });
+    dispatchPassword({ type: 'INPUT_BLUR' });
   };
 
   const submitHandler = (event) => {
     event.preventDefault();
-    props.onLogin(emailState.value, passworstate.value);
+    authCtx.onLogin(emailState.value, passwordState.value);
   };
 
   return (
     <Card className={classes.login}>
       <form onSubmit={submitHandler}>
         <div
-          className={`${classes.control} ${emailState.isValid === false ? classes.invalid : ''
-            }`}
+          className={`${classes.control} ${
+            emailState.isValid === false ? classes.invalid : ''
+          }`}
         >
           <label htmlFor="email">E-Mail</label>
           <input
@@ -101,14 +111,15 @@ const Login = (props) => {
           />
         </div>
         <div
-          className={`${classes.control} ${passworstate.isValid === false ? classes.invalid : ''
-            }`}
+          className={`${classes.control} ${
+            passwordState.isValid === false ? classes.invalid : ''
+          }`}
         >
           <label htmlFor="password">Password</label>
           <input
             type="password"
             id="password"
-            value={passworstate.value}
+            value={passwordState.value}
             onChange={passwordChangeHandler}
             onBlur={validatePasswordHandler}
           />
